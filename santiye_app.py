@@ -161,7 +161,7 @@ elif st.session_state["authentication_status"]:
 
             col3, col4 = st.columns(2)
             with col3:
-                st.subheader("📊 Aylık Toplam Harcama Trendi")
+                st.subheader("📊 Aylık Toplam Masraf")
                 if "Tarih" in df.columns and "Tutar" in df.columns:
                     df['Ay_Adi'] = df['Tarih'].dt.strftime('%B')
 
