@@ -7,7 +7,7 @@ from supabase import create_client
 from io import BytesIO
 
 # Sayfa Ayarları
-st.set_page_config(layout="wide", page_title="Şantiye Maliyet Yönetimi")
+st.set_page_config(layout="wide", page_title="ION Riva Projesi")
 
 # 1. KULLANICI GİRİŞ PANELİ AYARLARI
 credentials = st.secrets["credentials"].to_dict()
