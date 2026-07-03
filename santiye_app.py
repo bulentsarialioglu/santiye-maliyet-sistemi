@@ -32,7 +32,7 @@ elif st.session_state["authentication_status"]:
 
     KALEMLER = ["Su", "Elektrik", "Kırtasiye", "Araç Kirası", "Araç Bakımı", "Yakıt", "HGS", "İnternet", "LNG", "Yemek", "Fotokopi", "Mutfak Harcaması", "Güvenlik", "Yardımcı Personel", "Tamirat", "Genel Bakım", "Demirbaş", "Diğer"]
 
-    st.title("🏗️ Şantiye Maliyet Kontrol....Buğra Aktuğ....2011 Şampiyonu Trabzonspor")
+    st.title("🏗️ Şantiye İşletme Maliyeti")
 
     # Yan Menü: Veri Girişi
     st.sidebar.header("➕ Yeni Gider Ekle")
