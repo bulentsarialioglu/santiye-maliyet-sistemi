@@ -9,6 +9,18 @@ from io import BytesIO
 # Sayfa Ayarları
 st.set_page_config(layout="wide", page_title="Şantiye Maliyet Yönetimi")
 
+# Başlık üzerindeki gereksiz boşluğu azaltmak için CSS
+st.markdown(
+    """
+    <style>
+        .block-container {
+            padding-top: 1.5rem;
+        }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 # TÜRKÇE SAYI FORMATLAMA FONKSİYONU (12500.50 -> 12.500,50 TL)
 def tr_format(deger):
     try:
