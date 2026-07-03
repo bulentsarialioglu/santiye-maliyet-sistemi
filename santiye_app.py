@@ -7,7 +7,7 @@ from supabase import create_client
 from io import BytesIO
 
 # Sayfa Ayarları
-st.set_page_config(layout="wide", page_title="ION Riva Projesi")
+st.set_page_config(layout="wide", page_title="Şantiye Maliyet Yönetimi")
 
 # 1. KULLANICI GİRİŞ PANELİ AYARLARI
 credentials = st.secrets["credentials"].to_dict()
@@ -38,7 +38,7 @@ elif st.session_state["authentication_status"]:
     st.sidebar.header("➕ Yeni Gider Ekle")
     secilen_tarih = st.sidebar.date_input("Tarih Seçin", datetime.date.today())
     secilen_kalem = st.sidebar.selectbox("Maliyet Kalemi", KALEMLER)
-    girilen_tutar = st.sidebar.number_input("Tutar (TL)", min_value=0.0, step=100.0, format=",.2f")
+    girilen_tutar = st.sidebar.number_input("Tutar (TL)", min_value=0.0, step=100.0, format="%.2f")
     girilen_detay = st.sidebar.text_input("Detay/Açıklama (Örn: 34XYZ123 Plaka Haziran)")
 
     if st.sidebar.button("Gideri Buluta Kaydet"):
