@@ -21,12 +21,30 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+# TÜRKÇE SAYI FORMATLAMA (12500.50 -> 12.500,50) - TL EKİ OLMADAN
+def tr_number_str(deger):
+    try:
+        return f"{deger:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    except Exception:
+        return "0,00"
+
 # TÜRKÇE SAYI FORMATLAMA FONKSİYONU (12500.50 -> 12.500,50 TL)
 def tr_format(deger):
+    return tr_number_str(deger) + " TL"
+
+# TÜRKÇE FORMATTAN SAYIYA ÇEVİRME FONKSİYONU ("1.234,56" -> 1234.56)
+def tr_to_float(metin):
+    if metin is None:
+        return None
+    metin = str(metin).strip()
+    if metin == "":
+        return None
     try:
-        return f"{deger:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") + " TL"
-    except Exception:
-        return "0,00 TL"
+        # Binlik ayıracı (.) kaldır, ondalık ayıracı (,) noktaya çevir
+        temiz_metin = metin.replace(".", "").replace(",", ".")
+        return float(temiz_metin)
+    except ValueError:
+        return None
 
 # 1. KULLANICI GİRİŞ PANELİ AYARLARI
 credentials = st.secrets["credentials"].to_dict()
@@ -57,11 +75,14 @@ elif st.session_state["authentication_status"]:
     st.sidebar.header("➕ Yeni Gider Ekle")
     secilen_tarih = st.sidebar.date_input("Tarih Seçin", datetime.date.today())
     secilen_kalem = st.sidebar.selectbox("Maliyet Kalemi", KALEMLER)
-    girilen_tutar = st.sidebar.number_input("Tutar (TL)", min_value=0.0, step=100.0, format="%.2f")
+    girilen_tutar_str = st.sidebar.text_input("Tutar (TL)", placeholder="Örn: 1.250,50")
     girilen_detay = st.sidebar.text_input("Detay/Açıklama (Örn: 34XYZ123 Plaka Haziran)")
 
     if st.sidebar.button("Gideri Buluta Kaydet"):
-        if girilen_tutar > 0:
+        girilen_tutar = tr_to_float(girilen_tutar_str)
+        if girilen_tutar is None:
+            st.sidebar.error("Lütfen tutarı '1.250,50' formatında (nokta=binlik, virgül=ondalık) girin.")
+        elif girilen_tutar > 0:
             yil_ay = secilen_tarih.strftime("%Y-%m")
             try:
                 supabase_client.table("santiye_maliyetleri").insert({
@@ -231,22 +252,28 @@ elif st.session_state["authentication_status"]:
 
                         yeni_tarih = st.date_input("Yeni Tarih", mevcut_tarih, key="y_tarih")
                         yeni_kalem = st.selectbox("Yeni Maliyet Kalemi", KALEMLER, index=mevcut_kalem_idx, key="y_kalem")
-                        yeni_tutar = st.number_input("Yeni Tutar (TL)", min_value=0.0, value=mevcut_tutar, format="%.2f", key="y_tutar")
+                        yeni_tutar_str = st.text_input("Yeni Tutar (TL)", value=tr_number_str(mevcut_tutar), key="y_tutar")
                         yeni_detay = st.text_input("Yeni Detay/Açıklama", mevcut_detay, key="y_detay")
 
                         if st.button("🔵 Değişiklikleri Bulutta Güncelle", use_container_width=True):
-                            try:
-                                supabase_client.table("santiye_maliyetleri").update({
-                                    "tarih": str(yeni_tarih),
-                                    "yil_ay": yeni_tarih.strftime("%Y-%m"),
-                                    "kalem": yeni_kalem,
-                                    "tutar": yeni_tutar,
-                                    "detay": yeni_detay
-                                }).eq("id", int(secilen_duzenle_id)).execute()
-                                st.success("Kayıt başarıyla güncellendi!")
-                                st.rerun()
-                            except Exception as e:
-                                st.error(f"Güncelleme hatası: {e}")
+                            yeni_tutar = tr_to_float(yeni_tutar_str)
+                            if yeni_tutar is None:
+                                st.error("Lütfen tutarı '1.250,50' formatında (nokta=binlik, virgül=ondalık) girin.")
+                            elif yeni_tutar <= 0:
+                                st.error("Lütfen sıfırdan büyük bir tutar girin.")
+                            else:
+                                try:
+                                    supabase_client.table("santiye_maliyetleri").update({
+                                        "tarih": str(yeni_tarih),
+                                        "yil_ay": yeni_tarih.strftime("%Y-%m"),
+                                        "kalem": yeni_kalem,
+                                        "tutar": yeni_tutar,
+                                        "detay": yeni_detay
+                                    }).eq("id", int(secilen_duzenle_id)).execute()
+                                    st.success("Kayıt başarıyla güncellendi!")
+                                    st.rerun()
+                                except Exception as e:
+                                    st.error(f"Güncelleme hatası: {e}")
 
                 # 🗑️ SİLME ALANI (SAĞ SÜTUN)
                 with col_sil_sag:
