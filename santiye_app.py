@@ -14,7 +14,7 @@ st.markdown(
     """
     <style>
         .block-container {
-            padding-top: 0.3rem;
+            padding-top: 1.5rem;
         }
     </style>
     """,
@@ -105,10 +105,37 @@ elif st.session_state["authentication_status"]:
             bu_ay = datetime.date.today().strftime("%Y-%m")
             bu_ay_harcama = df[df["Yıl_Ay"] == bu_ay]["Tutar"].sum() if "Yıl_Ay" in df.columns and "Tutar" in df.columns else 0
 
+            # 📌 Bu ayki harcamanın, diğer ayların ortalamasına göre %15'ten fazla
+            # yüksek olup olmadığını kontrol et (uyarı ünlemi için)
+            uyari_goster = False
+            fark_yuzde = 0
+            if "Yıl_Ay" in df.columns and "Tutar" in df.columns:
+                aylik_toplamlar = df.groupby("Yıl_Ay")["Tutar"].sum()
+                diger_aylar = aylik_toplamlar.drop(labels=[bu_ay], errors="ignore")
+                if len(diger_aylar) > 0:
+                    ortalama_aylik_harcama = diger_aylar.mean()
+                    if ortalama_aylik_harcama > 0 and bu_ay_harcama > ortalama_aylik_harcama * 1.15:
+                        uyari_goster = True
+                        fark_yuzde = ((bu_ay_harcama / ortalama_aylik_harcama) - 1) * 100
+
             # 📌 KPI Metrikleri Türkçe Formatına Güncellendi
             col1, col2 = st.columns(2)
             col1.metric("📊 Toplam Proje Harcaması", tr_format(toplam_harcama))
-            col2.metric("📅 Bu Ayki Toplam Harcama", tr_format(bu_ay_harcama))
+            if uyari_goster:
+                col2.metric(
+                    "📅 Bu Ayki Toplam Harcama ❗",
+                    tr_format(bu_ay_harcama),
+                    help=f"Bu ayki harcama, diğer ayların ortalamasının %{fark_yuzde:.0f} üzerinde!"
+                )
+            else:
+                col2.metric("📅 Bu Ayki Toplam Harcama", tr_format(bu_ay_harcama))
+
+            if uyari_goster:
+                col2.markdown(
+                    f"<span style='color:#D32F2F; font-weight:700;'>❗ Ortalamanın %{fark_yuzde:.0f} üzerinde harcama yapıldı!</span>",
+                    unsafe_allow_html=True
+                )
+
             st.markdown("---")
 
             col3, col4 = st.columns(2)
