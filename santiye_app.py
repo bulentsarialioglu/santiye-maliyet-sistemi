@@ -30,7 +30,7 @@ elif st.session_state["authentication_status"]:
     st.sidebar.write(f"Hoş geldiniz, **{kullanici_adi}**")
     authenticator.logout('Güvenli Çıkış Yap', 'sidebar')
 
-    KALEMLER = ["Su", "Elektrik", "Kırtasiye", "Araç Kirası", "Araç Bakımı", "Yakıt", "HGS", "İnternet", "LNG", "Yemek", "Fotokopi", "Mutfak Harcaması", "Güvenlik", "Yardımcı Personel", "Tamirat", "Genel Bakım", "Demirbaş", "Diğer"]
+    KALEMLER = ["Su", "Elektrik", "Kırtasiye", "Araç Kirası", "Araç Bakımı", "Yakıt", "HGS", "İnternet", "LNG", "Yemek", "Fotokopi", "Mutfak Harcaması", "Güvenlik", "Yardımcı Personel", "Temizlik Malzemesi", "Genel Bakım", "GSM", "Vidanjör", "Diğer"]
 
     st.title("🏗️ Şantiye İşletme Maliyeti")
 
