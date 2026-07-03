@@ -65,7 +65,17 @@ elif st.session_state["authentication_status"]:
         
         if response.data:
             df_raw = pd.DataFrame(response.data)
-            df = df_raw.rename(columns={"id": "ID", "tarih": "Tarih", "yil_ay": "Yıl_Ay", "kalem": "Kalem", "tutar": "Tutar", "detay": "Detay", "created_at": "Kayıt Tarihi"})
+            
+            kolon_haritasi = {
+                "id": "ID", 
+                "tarih": "Tarih", 
+                "yil_ay": "Yıl_Ay", 
+                "kalem": "Kalem", 
+                "tutar": "Tutar", 
+                "detay": "Detay", 
+                "created_at": "Kayıt Tarihi"
+            }
+            df = df_raw.rename(columns={k: v for k, v in kolon_haritasi.items() if k in df_raw.columns})
             
             if "Tarih" in df.columns: df['Tarih'] = pd.to_datetime(df['Tarih'])
             if "Tutar" in df.columns: df['Tutar'] = df['Tutar'].astype(float)
@@ -83,28 +93,25 @@ elif st.session_state["authentication_status"]:
             with col3:
                 st.subheader("📊 Aylık Toplam Harcama Trendi")
                 if "Tarih" in df.columns and "Tutar" in df.columns:
-                    # Tarihten Ay isimlerini çekiyoruz (Ocak, Şubat...)
                     df['Ay_Adi'] = df['Tarih'].dt.strftime('%B')
                     
-                    # 12 ayın kronolojik sırasını garanti altına alıyoruz
                     ay_siralamasi = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
                     turkce_aylar = {"January": "Ocak", "February": "Şubat", "March": "Mart", "April": "Nisan", "May": "Mayıs", "June": "Haziran", "July": "Temmuz", "August": "Ağustos", "September": "Eylül", "October": "Ekim", "November": "Kasım", "December": "Aralık"}
                     
-                    # Gruplama ve sıralama işlemleri
-                    aylik_grup = df.groupby('Ay_Adi')['Tutar'].sum().reset_index()
+                    aylik_grup = df.groupby('Ay_Adi', as_index=False)['Tutar'].sum()
                     aylik_grup['Ay_Adi'] = pd.Categorical(aylik_grup['Ay_Adi'], categories=ay_siralamasi, ordered=True)
                     aylik_grup = aylik_grup.sort_values('Ay_Adi')
                     aylik_grup['Ay_Adi'] = aylik_grup['Ay_Adi'].map(turkce_aylar)
                     
-                    # İstediğiniz dikey sütun (Bar) grafiği tasarımı
                     fig_bar = px.bar(aylik_grup, x="Ay_Adi", y="Tutar", text_auto='.2s', labels={"Ay_Adi": "Aylar", "Tutar": "Toplam Gider (TL)"})
-                    fig_bar.update_traces(marker_color='#FF4B4B', textposition='outside')
+                    # İstediğiniz bordo renk kuralı (#800020) buraya eklendi
+                    fig_bar.update_traces(marker_color='#800020', textposition='outside')
                     st.plotly_chart(fig_bar, use_container_width=True)
                     
             with col4:
                 st.subheader("🍕 Kalemlere Göre Dağılım (Genel)")
                 if "Kalem" in df.columns and "Tutar" in df.columns:
-                    st.plotly_chart(px.pie(df.groupby("Kalem")["Tutar"].sum().reset_index(), values="Tutar", names="Kalem", hole=0.3), use_container_width=True)
+                    st.plotly_chart(px.pie(df.groupby("Kalem", as_index=False)["Tutar"].sum(), values="Tutar", names="Kalem", hole=0.3), use_container_width=True)
 
             st.markdown("---")
             st.subheader("🔍 Detaylı Veri İnceleme & Filtreleme")
@@ -125,15 +132,15 @@ elif st.session_state["authentication_status"]:
 
             if "Tarih" in filtreli_df.columns: filtreli_df = filtreli_df.sort_values(by="Tarih", ascending=False)
 
+            gosterilecek_kolonlar = [c for c in ["ID", "Tarih", "Yıl_Ay", "Kalem", "Tutar", "Detay", "Kayıt Tarihi"] if c in filtreli_df.columns]
+
             col_pdf, _ = st.columns(2)
             with col_pdf:
-                # Ay_Adi kolonunu çıktıya dahil etmemek için filtreliyoruz
-                export_df = filtreli_df[["ID", "Tarih", "Yıl_Ay", "Kalem", "Tutar", "Detay", "Kayıt Tarihi"]].copy()
+                export_df = filtreli_df[gosterilecek_kolonlar].copy()
                 csv_data = export_df.to_csv(index=False).encode('utf-8')
                 st.download_button(label="📥 Filtrelenmiş Raporu CSV/Excel Olarak İndir", data=csv_data, file_name=f"santiye_raporu_{datetime.date.today()}.csv", mime="text/csv", use_container_width=True)
 
-            # Ekranda temiz durması için geçici analiz kolonunu gizleyerek gösteriyoruz
-            st.dataframe(filtreli_df[["ID", "Tarih", "Yıl_Ay", "Kalem", "Tutar", "Detay", "Kayıt Tarihi"]], use_container_width=True, column_config={"Tutar": st.column_config.NumberColumn("Tutar (TL)", format="%.2f TL")})
+            st.dataframe(filtreli_df[gosterilecek_kolonlar], use_container_width=True, column_config={"Tutar": st.column_config.NumberColumn("Tutar (TL)", format="%.2f TL")})
 
             # --- KAYIT SİLME PANELİ ---
             st.markdown("---")
