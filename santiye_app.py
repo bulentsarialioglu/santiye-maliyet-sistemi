@@ -123,33 +123,50 @@ elif st.session_state["authentication_status"]:
                 df['Tutar'] = df['Tutar'].astype(float)
 
             toplam_harcama = df["Tutar"].sum() if "Tutar" in df.columns else 0
-            bu_ay = datetime.date.today().strftime("%Y-%m")
-            bu_ay_harcama = df[df["Yıl_Ay"] == bu_ay]["Tutar"].sum() if "Yıl_Ay" in df.columns and "Tutar" in df.columns else 0
 
-            # 📌 Bu ayki harcamanın, diğer ayların ortalamasına göre %15'ten fazla
-            # yüksek olup olmadığını kontrol et (uyarı ünlemi için)
+            # 📌 Ortalama SADECE veri girilen aylar üzerinden hesaplanır.
+            # "Bu ayki harcama" yerine, verinin girildiği EN SON ay esas alınır
+            # (takvimde bugünün ayı değil) — böylece henüz veri girilmemiş bir ay
+            # ortalamayı anlamsızca düşürmez.
             uyari_goster = False
             fark_yuzde = 0
+            ortalama_aylik_harcama = 0
+            son_ay_harcama = 0
+            son_ay_etiketi = "Bu Ayki"
+
             if "Yıl_Ay" in df.columns and "Tutar" in df.columns:
-                aylik_toplamlar = df.groupby("Yıl_Ay")["Tutar"].sum()
-                diger_aylar = aylik_toplamlar.drop(labels=[bu_ay], errors="ignore")
-                if len(diger_aylar) > 0:
-                    ortalama_aylik_harcama = diger_aylar.mean()
-                    if ortalama_aylik_harcama > 0 and bu_ay_harcama > ortalama_aylik_harcama * 1.15:
+                aylik_toplamlar = df.groupby("Yıl_Ay")["Tutar"].sum().sort_index()
+                if len(aylik_toplamlar) > 0:
+                    ortalama_aylik_harcama = aylik_toplamlar.mean()
+                    son_ay = aylik_toplamlar.index[-1]
+                    son_ay_harcama = aylik_toplamlar.iloc[-1]
+
+                    try:
+                        son_ay_parcalari = str(son_ay).split("-")
+                        son_ay_no = int(son_ay_parcalari[1])
+                        son_yil = son_ay_parcalari[0]
+                        AY_ISIMLERI_TR = {1: "Ocak", 2: "Şubat", 3: "Mart", 4: "Nisan", 5: "Mayıs", 6: "Haziran", 7: "Temmuz", 8: "Ağustos", 9: "Eylül", 10: "Ekim", 11: "Kasım", 12: "Aralık"}
+                        son_ay_etiketi = f"{AY_ISIMLERI_TR.get(son_ay_no, str(son_ay))} {son_yil}"
+                    except Exception:
+                        son_ay_etiketi = str(son_ay)
+
+                    if ortalama_aylik_harcama > 0 and son_ay_harcama > ortalama_aylik_harcama * 1.15:
                         uyari_goster = True
-                        fark_yuzde = ((bu_ay_harcama / ortalama_aylik_harcama) - 1) * 100
+                        fark_yuzde = ((son_ay_harcama / ortalama_aylik_harcama) - 1) * 100
 
             # 📌 KPI Metrikleri Türkçe Formatına Güncellendi
-            col1, col2 = st.columns(2)
+            col1, col_ortalama, col2 = st.columns(3)
             col1.metric("📊 Toplam Proje Harcaması", tr_format(toplam_harcama))
+            col_ortalama.metric("📈 Aylık Ortalama Harcama", tr_format(ortalama_aylik_harcama))
+            son_ay_baslik = f"📅 {son_ay_etiketi} Toplam Harcaması"
             if uyari_goster:
                 col2.metric(
-                    "📅 Bu Ayki Toplam Harcama ❗",
-                    tr_format(bu_ay_harcama),
-                    help=f"Bu ayki harcama, diğer ayların ortalamasının %{fark_yuzde:.0f} üzerinde!"
+                    son_ay_baslik + " ❗",
+                    tr_format(son_ay_harcama),
+                    help=f"Bu ay, aylık ortalamanın %{fark_yuzde:.0f} üzerinde!"
                 )
             else:
-                col2.metric("📅 Bu Ayki Toplam Harcama", tr_format(bu_ay_harcama))
+                col2.metric(son_ay_baslik, tr_format(son_ay_harcama))
 
             if uyari_goster:
                 col2.markdown(
